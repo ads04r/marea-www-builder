@@ -120,7 +120,7 @@ def compile_assets(config, js_path, css_path, dist_dir):
     for js_filename in priority:
         with open(js_filename, 'r') as fp:
             js = js + str(fp.read()) + '\n'
-    for filename in os.listdir(js_path):
+    for filename in sorted(os.listdir(js_path)):
         if not filename.endswith('.js'):
             continue
         js_filename = os.path.join(js_path, filename)
