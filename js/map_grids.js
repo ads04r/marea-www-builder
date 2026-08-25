@@ -48,7 +48,7 @@ function GridSquaresFeatureSet()
                                 return { stroke: true, fill: true, color: '#007FFF', fillColor: '#007FFF', weight: 1, fillOpacity: 0.9 }
                             },
                             onEachFeature(feature, layer) {
-                                layer.bindPopup('<h1>' + feature.properties.label + '</h1><div class="popuplinks"> <a target="_blank" class="btn btn-primary" href="' + feature.properties.url + '">Report</a> <a target="_blank" class="btn btn-secondary" href="' + feature.properties.edit_url + '">Edit</a> </p>');
+                                layer.bindPopup('<h1>' + feature.properties.label + '</h1><div class="popuplinks"> <a target="_blank" class="btn btn-primary" href="' + feature.properties.url + '">View</a> <a target="_blank" class="btn btn-secondary" href="' + feature.properties.edit_url + '">Edit</a> </p>');
                             }
                         }));
                     }
@@ -79,6 +79,7 @@ function GridSquaresFeatureSet()
 	this.update = function()
 	{
 	}
+    this.startsVisible = function() { return true; }
 }
 GridSquaresFeatureSet.prototype = Object.create(FeatureSet.prototype);
 FSREG.addFeatureSet('grid_squares', new GridSquaresFeatureSet());

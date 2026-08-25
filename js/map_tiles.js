@@ -34,6 +34,7 @@ function TilesFeatureSet()
 	}
 	this.title = function() { return("Aerial View"); }
 	this.description = function() { return("Toggles between the standard map view and aerial imagery."); }
+	this.startsVisible = function() { return false; }
 }
 TilesFeatureSet.prototype = Object.create(FeatureSet.prototype);
 FSREG.addFeatureSet('aerial', new TilesFeatureSet());
