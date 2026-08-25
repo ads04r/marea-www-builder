@@ -246,8 +246,8 @@ $(document).ready(function()
 	// Create the map object with some sensible defaults
 	map = L.map('map', {
 		zoomControl: false,
-		center: [50.9354, -1.3964],
-		zoom: 17,
+		center: [24.81, 20.65],
+		zoom: 4,
 		maxZoom: 20
 	});
 
@@ -265,4 +265,5 @@ $(document).ready(function()
 	});
 
 	new L.Control.Zoom({ position: 'bottomright' }).addTo(map);
+
 });

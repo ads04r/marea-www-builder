@@ -48,7 +48,7 @@ function GridSquaresFeatureSet()
                                 return { stroke: true, fill: true, color: '#007FFF', fillColor: '#007FFF', weight: 1, fillOpacity: 0.9 }
                             },
                             onEachFeature(feature, layer) {
-                                layer.bindPopup('<h1>' + feature.properties.label + '</h1><div class="popuplinks"> <a href="' + feature.properties.url + '">Report</a> <a href="' + feature.properties.edit_url + '">Edit</a> </p>');
+                                layer.bindPopup('<h1>' + feature.properties.label + '</h1><div class="popuplinks"> <a target="_blank" class="btn btn-primary" href="' + feature.properties.url + '">Report</a> <a target="_blank" class="btn btn-secondary" href="' + feature.properties.edit_url + '">Edit</a> </p>');
                             }
                         }));
                     }
@@ -58,7 +58,7 @@ function GridSquaresFeatureSet()
                 }
             },
             onEachFeature(feature, layer) {
-                layer.bindPopup('<h1>' + feature.properties.name + '</h1><p><a href="' + feature.properties.url + '">View statistics</a></p>');
+                layer.bindPopup('<h1>' + feature.properties.name + '</h1>' + feature.properties.html);
             }
         });
         map.addLayer(this.layer);

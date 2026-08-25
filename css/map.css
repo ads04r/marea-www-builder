@@ -20,3 +20,6 @@
 .marker-cluster span {
 	line-height: 30px;
 	}
+
+.leaflet-popup-content h1 { font-size: large; padding: 0px; border-bottom: solid 1px #007FFF; margin: 0px; margin-bottom: 0.5em; }	
+.leaflet-container a.btn-primary { color: #FFFFFF !important; }

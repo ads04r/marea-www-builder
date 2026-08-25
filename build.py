@@ -1,15 +1,4 @@
-import os, json, csv, requests, shutil, kml2geojson.main
-
-base_dir = os.path.dirname(__file__)
-dist_dir = os.path.join(base_dir, 'dist')
-data_dir = os.path.join(base_dir, 'data')
-config_file = os.path.join(base_dir, 'javascript.json')
-js_path = os.path.join(base_dir, 'js')
-css_path = os.path.join(base_dir, 'css')
-static_path = os.path.join(base_dir, 'static')
-grids_file = os.path.join(data_dir, 'eamena_grids.kml')
-geometries_file = os.path.join(data_dir, 'geometries.csv')
-summary_file = os.path.join(data_dir, 'summary.json')
+import os, json, csv, requests, shutil, kml2geojson.main, argparse
 
 def get_grid_geometries(grids_file):
 
@@ -111,6 +100,7 @@ def compile_assets(config, js_path, css_path, dist_dir):
                     with open(js_filename, 'w') as fp:
                         fp.write(r.content.decode('utf-8'))
             if len(item) >= 4:
+                priority.append(css_filename)
                 if not os.path.exists(css_filename):
                     url = item[3].format(item[1])
                     with requests.get(url) as r:
@@ -118,8 +108,9 @@ def compile_assets(config, js_path, css_path, dist_dir):
                             fp.write(r.content.decode('utf-8'))
     js = ''
     for js_filename in priority:
-        with open(js_filename, 'r') as fp:
-            js = js + str(fp.read()) + '\n'
+        if js_filename.endswith('.js'):
+            with open(js_filename, 'r') as fp:
+                js = js + str(fp.read()) + '\n'
     for filename in sorted(os.listdir(js_path)):
         if not filename.endswith('.js'):
             continue
@@ -129,19 +120,28 @@ def compile_assets(config, js_path, css_path, dist_dir):
         with open(js_filename, 'r') as fp:
             js = js + str(fp.read()) + '\n'
     css = ''
+    for css_filename in priority:
+        if css_filename.endswith('.css'):
+            with open(css_filename, 'r') as fp:
+                css = css + str(fp.read()) + '\n'
     for filename in os.listdir(css_path):
         if not filename.endswith('.css'):
             continue
-        with open(os.path.join(css_path, filename), 'r') as fp:
+        css_filename = os.path.join(css_path, filename)
+        if css_filename in priority:
+            continue
+        with open(css_filename, 'r') as fp:
             css = css + str(fp.read()) + '\n'
 
     with open(os.path.join(dist_dir, 'js.js'), 'w') as fp:
         fp.write(js)
     with open(os.path.join(dist_dir, 'css.css'), 'w') as fp:
-        fp.write(css)
+        fp.write(css)    
 
-def compile_grids_data(grids_file, geometries_file, summary_file, dist_dir):
+def compile_grids_data(grids_file, geometries_file, summary_file, disturbances_file, dist_dir):
     geom = get_grid_geometries(grids_file)
+    with open(disturbances_file, 'r') as fp:
+        disturbances_data = json.load(fp)
     item_geom = get_site_geometries(geometries_file)
     dist_data = os.path.join(dist_dir, 'data')
     os.makedirs(dist_data, exist_ok=True)
@@ -166,6 +166,10 @@ def compile_grids_data(grids_file, geometries_file, summary_file, dist_dir):
                 break
         if not marea:
             continue
+        disturbances = []
+        if id in disturbances_data:
+            if 'disturbances' in disturbances_data[id]:
+                disturbances = disturbances_data[id]['disturbances']
         if isinstance(item['Grid'], list):
             grids = item['Grid']
         else:
@@ -181,11 +185,24 @@ def compile_grids_data(grids_file, geometries_file, summary_file, dist_dir):
                     "properties": {
                         "name": grid_id,
                         "url": grid_url,
-                        "sites": []
+                        "sites": [],
+                        "disturbances": {}
                     },
                     "geometry": geom[grid_id]
                 }
             data[grid_id]['properties']['sites'].append(str(id))
+            for disturbance in disturbances:
+                if disturbance not in data[grid_id]['properties']['disturbances']:
+                    data[grid_id]['properties']['disturbances'][disturbance] = 0
+                data[grid_id]['properties']['disturbances'][disturbance] = data[grid_id]['properties']['disturbances'][disturbance] + 1
+    for kk in data.keys():
+        grid_id = str(kk)
+        if len(data[grid_id]['properties']['disturbances']) == 0:
+            data[grid_id]['properties']['html'] = '<p>No disturbance information available for this grid square.</p>'
+            continue
+        table_data = sorted([[str(k), int(v)] for k, v in data[grid_id]['properties']['disturbances'].items()], key=lambda x: x[1])
+        table_html = ''.join(["<tr><th>{}</th><td>{}</td></tr>".format(x[0], x[1]) for x in table_data])
+        data[grid_id]['properties']['html'] = "<table>{}</table>".format(table_html)
     with open(os.path.join(dist_data, 'grids.json'), 'w') as fp:
         fp.write(json.dumps(list(data.values())))
     for k, v in data.items():
@@ -203,13 +220,37 @@ def compile_grids_data(grids_file, geometries_file, summary_file, dist_dir):
             features = features + flatten_features(item_geom[item_id], prop)
         if len(features) > 0:
             with open(os.path.join(dist_data, grid_id + '.json'), 'w') as fp:
-                fp.write(json.dumps({"type": "FeatureCollection", "features": features}, indent=4))
+                fp.write(json.dumps({"type": "FeatureCollection", "features": features}))
 
-with open(config_file, 'r') as fp:
-    config = json.load(fp)
+def main(operation='all'):
 
-os.makedirs(dist_dir, exist_ok=True)
+    base_dir = os.path.dirname(__file__)
+    dist_dir = os.path.join(base_dir, 'dist')
+    data_dir = os.path.join(base_dir, 'data')
+    config_file = os.path.join(base_dir, 'javascript.json')
+    js_path = os.path.join(base_dir, 'js')
+    css_path = os.path.join(base_dir, 'css')
+    static_path = os.path.join(base_dir, 'static')
+    grids_file = os.path.join(data_dir, 'eamena_grids.kml')
+    geometries_file = os.path.join(data_dir, 'geometries.csv')
+    disturbances_file = os.path.join(data_dir, 'disturbances.json')
+    summary_file = os.path.join(data_dir, 'summary.json')
 
-compile_assets(config, js_path, css_path, dist_dir)
-# compile_grids_data(grids_file, geometries_file, summary_file, dist_dir)
-copy_static_files(static_path, dist_dir)
+    with open(config_file, 'r') as fp:
+        config = json.load(fp)
+
+    os.makedirs(dist_dir, exist_ok=True)
+
+    if operation in ['all', 'build']:
+        compile_assets(config, js_path, css_path, dist_dir)
+        copy_static_files(static_path, dist_dir)
+    if operation in ['all']:
+        compile_grids_data(grids_file, geometries_file, summary_file, disturbances_file, dist_dir)
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description = 'Tool for building ')
+    parser.add_argument('operation', help='The operation you want this command to carry out.', nargs='?', action='store', default='all', choices=['all', 'clean', 'build'])
+    args = parser.parse_args()
+
+    main(args.operation)
