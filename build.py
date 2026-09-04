@@ -10,7 +10,26 @@ def get_grid_geometries(grids_file):
         ret[id] = grid['geometry']
     return ret
 
-def get_all_marea_grids(marea_grids_file):
+def get_all_marea_grids_geojson(coastal_grids_file):
+
+    grids = []
+    with open(coastal_grids_file, 'r') as fp:
+        data = json.load(fp)
+    if 'features' not in data:
+        return grids
+    for grid in data['features']:
+        if 'properties' not in grid:
+            continue
+        if 'Name' not in grid['properties']:
+            continue
+        grid_id = grid['properties']['Name'].strip().upper()
+        if grid_id in grids:
+            continue
+        grids.append(grid_id)
+
+    return grids
+
+def get_all_marea_grids_kml(marea_grids_file):
 
     doc = ET.parse("data/marea_all_grids.kml")
     root = doc.getroot()
@@ -157,9 +176,9 @@ def compile_assets(config, js_path, css_path, dist_dir):
     with open(os.path.join(dist_dir, 'css.css'), 'w') as fp:
         fp.write(css)    
 
-def compile_ghost_data(marea_grids_file, geometries_file, empty_records_file, dist_dir):
+def compile_ghost_data(coastal_grids_file, geometries_file, empty_records_file, dist_dir):
 
-    marea_grids = get_all_marea_grids(marea_grids_file)
+    marea_grids = get_all_marea_grids_geojson(coastal_grids_file)
     geom = get_site_geometries(geometries_file)
     dist_data = os.path.join(dist_dir, 'data')
     features = []
@@ -186,9 +205,9 @@ def compile_ghost_data(marea_grids_file, geometries_file, empty_records_file, di
     with open(os.path.join(dist_data, 'ghost_points.json'), 'w') as fp:
         fp.write(json.dumps({"type": "FeatureCollection", "features": features}))
 
-def compile_grids_data(grids_file, marea_grids_file, geometries_file, summary_file, disturbances_file, dist_dir):
+def compile_grids_data(grids_file, coastal_grids_file, geometries_file, summary_file, disturbances_file, dist_dir):
 
-    marea_grids = get_all_marea_grids(marea_grids_file)
+    marea_grids = get_all_marea_grids_geojson(coastal_grids_file)
     geom = get_grid_geometries(grids_file)
     with open(disturbances_file, 'r') as fp:
         disturbances_data = json.load(fp)
@@ -319,6 +338,7 @@ def main(operation='all'):
     static_path = os.path.join(base_dir, 'static')
     grids_file = os.path.join(data_dir, 'eamena_grids.kml')
     marea_grids_file = os.path.join(data_dir, 'marea_all_grids.kml')
+    coastal_grids_file = os.path.join(data_dir, 'coastal_grids.json')
     geometries_file = os.path.join(data_dir, 'geometries.csv')
     disturbances_file = os.path.join(data_dir, 'disturbances.json')
     summary_file = os.path.join(data_dir, 'summary.json')
@@ -330,12 +350,12 @@ def main(operation='all'):
     os.makedirs(dist_dir, exist_ok=True)
 
     if operation in ['all']:
-        compile_ghost_data(marea_grids_file, geometries_file, empty_records_file, dist_dir)
+        compile_ghost_data(coastal_grids_file, geometries_file, empty_records_file, dist_dir)
     if operation in ['all', 'build']:
         compile_assets(config, js_path, css_path, dist_dir)
         copy_static_files(static_path, dist_dir)
     if operation in ['all']:
-        compile_grids_data(grids_file, marea_grids_file, geometries_file, summary_file, disturbances_file, dist_dir)
+        compile_grids_data(grids_file, coastal_grids_file, geometries_file, summary_file, disturbances_file, dist_dir)
 
 if __name__ == "__main__":
 
