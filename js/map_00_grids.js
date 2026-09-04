@@ -19,7 +19,7 @@ function GridSquaresFeatureSet()
 	FeatureSet.call(this);
 	this.layer = [];
     this.markers = L.markerClusterGroup({
-        spiderfyOnMaxZoon: false,
+        spiderfyOnMaxZoom: false,
         showCoverageOnHover: false,
         zoomToBoundsOnClick: true
     });

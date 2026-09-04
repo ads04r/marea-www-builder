@@ -19,3 +19,10 @@
 .marker-cluster span {
 	line-height: 30px;
 	}
+
+.marker-cluster-error {
+	background-color: #FF0000 !important;
+	}
+.marker-cluster-error div {
+	background-color: #FF0000 !important;
+	}

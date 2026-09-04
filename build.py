@@ -157,6 +157,35 @@ def compile_assets(config, js_path, css_path, dist_dir):
     with open(os.path.join(dist_dir, 'css.css'), 'w') as fp:
         fp.write(css)    
 
+def compile_ghost_data(marea_grids_file, geometries_file, empty_records_file, dist_dir):
+
+    marea_grids = get_all_marea_grids(marea_grids_file)
+    geom = get_site_geometries(geometries_file)
+    dist_data = os.path.join(dist_dir, 'data')
+    features = []
+    with open(empty_records_file, 'r') as fp:
+        reader = csv.DictReader(fp)
+        for item in reader:
+            id_key = 'UUID'
+            for kk in item.keys():
+                k = str(kk)
+                if k.endswith('UUID'):
+                    id_key = k
+            id = item[id_key]
+            eamena_id = item['EAMENA-ID']
+            grid_id = item['Grid Square']
+            grid_url = "https://database.eamena.org/report/{}".format(id)
+            if not id in geom:
+                continue
+            if not grid_id in marea_grids:
+                continue
+            features = features + flatten_features(geom[id], {
+                    "name": eamena_id,
+                    "url": grid_url,
+                })
+    with open(os.path.join(dist_data, 'ghost_points.json'), 'w') as fp:
+        fp.write(json.dumps({"type": "FeatureCollection", "features": features}))
+
 def compile_grids_data(grids_file, marea_grids_file, geometries_file, summary_file, disturbances_file, dist_dir):
 
     marea_grids = get_all_marea_grids(marea_grids_file)
@@ -261,7 +290,7 @@ def compile_grids_data(grids_file, marea_grids_file, geometries_file, summary_fi
             "geometry": geom[grid_id]
         }
     with open(os.path.join(dist_data, 'unfinished_marea_grids.json'), 'w') as fp:
-        fp.write(json.dumps(list(data.values())))        
+        fp.write(json.dumps(list(data.values())))    
 
 def get_empty_records_layer(empty_records_file, geometries_file):
     geom = get_site_geometries(geometries_file)
@@ -300,6 +329,8 @@ def main(operation='all'):
 
     os.makedirs(dist_dir, exist_ok=True)
 
+    if operation in ['all']:
+        compile_ghost_data(marea_grids_file, geometries_file, empty_records_file, dist_dir)
     if operation in ['all', 'build']:
         compile_assets(config, js_path, css_path, dist_dir)
         copy_static_files(static_path, dist_dir)

@@ -19,7 +19,7 @@ function CoastBufferFeatureSet()
         this.layer = L.geoJSON(get_coast_geojson(), {
             style: function(feature) {
                 return {
-                    stroke: true, fill: true, color: '#000000', fillColor: '#FF7F7F', fillOpacity: 0.2, weight: 1
+                    stroke: true, fill: true, color: '#0000FF', fillColor: '#7FAFFF', fillOpacity: 0.2, weight: 1
                 }
             }
         });

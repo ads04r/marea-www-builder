@@ -20,11 +20,11 @@ function UnfinishedGridSquaresFeatureSet()
             style: function(feature) {
                 var url = 'data/' + feature.properties.name + '.json';
                 return {
-                    stroke: true, fill: true, color: '#000000', fillColor: '#FF7F7F', fillOpacity: 0.2, weight: 1
+                    stroke: true, fill: true, color: '#FF0000', fillColor: '#FF7F7F', fillOpacity: 0.2, weight: 1
                 }
             },
             onEachFeature(feature, layer) {
-                layer.bindPopup('<h1>' + feature.properties.name + '</h1>' + feature.properties.html);
+                layer.bindPopup('<h1>' + feature.properties.name + '</h1>');
             }
         });
 	}
