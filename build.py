@@ -159,7 +159,7 @@ def compile_grids_data(grids_file, geometries_file, summary_file, disturbances_f
         elif isinstance(item['Role'], list):
             roles = item['Role']
         else:
-            roles = [item['Role']]        
+            roles = [item['Role']]
         for role in roles:
             if role['id'] == '270e5b36-4d18-4b6e-a7ee-c49e3d301620':
                 marea = True
@@ -222,6 +222,25 @@ def compile_grids_data(grids_file, geometries_file, summary_file, disturbances_f
             with open(os.path.join(dist_data, grid_id + '.json'), 'w') as fp:
                 fp.write(json.dumps({"type": "FeatureCollection", "features": features}))
 
+def compile_optional_grid_data(grids_file, all_grids_file, dist_dir):
+    return False
+
+def get_empty_records_layer(empty_records_file, geometries_file):
+    geom = get_site_geometries(geometries_file)
+    ret = {}
+    with open(empty_records_file, 'r') as fp:
+        reader = csv.DictReader(fp)
+        for item in reader:
+            id_key = 'UUID'
+            for kk in item.keys():
+                k = str(kk)
+                if k.endswith('UUID'):
+                    id_key = k
+            id = item[id_key]
+            if id in geom:
+                ret[id] = geom[id]
+    return ret
+
 def main(operation='all'):
 
     base_dir = os.path.dirname(__file__)
@@ -232,9 +251,11 @@ def main(operation='all'):
     css_path = os.path.join(base_dir, 'css')
     static_path = os.path.join(base_dir, 'static')
     grids_file = os.path.join(data_dir, 'eamena_grids.kml')
+    all_grids_file = os.path.join(data_dir, 'marea_all_grids.kml')
     geometries_file = os.path.join(data_dir, 'geometries.csv')
     disturbances_file = os.path.join(data_dir, 'disturbances.json')
     summary_file = os.path.join(data_dir, 'summary.json')
+    empty_records_file = os.path.join(data_dir, 'eamena_empty_records.csv')
 
     with open(config_file, 'r') as fp:
         config = json.load(fp)
@@ -246,6 +267,7 @@ def main(operation='all'):
         copy_static_files(static_path, dist_dir)
     if operation in ['all']:
         compile_grids_data(grids_file, geometries_file, summary_file, disturbances_file, dist_dir)
+        compile_optional_grid_data(grids_file, all_grids_file, dist_dir)
 
 if __name__ == "__main__":
 
