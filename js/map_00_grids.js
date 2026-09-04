@@ -24,7 +24,7 @@ function GridSquaresFeatureSet()
         zoomToBoundsOnClick: true
     });
     var me = this;
-    this.modifyMenu = function() { return(false); } // Ensures no menu entry
+//    this.modifyMenu = function() { return(false); } // Ensures no menu entry
 	this.init = function()
 	{
         this.layer = L.geoJSON(get_grids_geojson(), {
@@ -65,8 +65,8 @@ function GridSquaresFeatureSet()
         map.addLayer(this.layer);
         map.addLayer(this.markers);
 	}
-	this.title = function() { return("Completed Grids / Sites"); }
-	this.description = function() { return("Displays all sites that MarEA have created, and the grid squares that they are within."); }
+	this.title = function() { return("MarEA Grids / Sites"); }
+	this.description = function() { return("Displays all sites that MarEA have created, and the grid squares within which they exist."); }
 	this.show = function()
 	{
 		map.addLayer(this.layer);
@@ -83,4 +83,4 @@ function GridSquaresFeatureSet()
     this.startsVisible = function() { return true; }
 }
 GridSquaresFeatureSet.prototype = Object.create(FeatureSet.prototype);
-FSREG.addFeatureSet('grid_squares', new GridSquaresFeatureSet());
+FSREG.addFeatureSet('no_default_layer', new GridSquaresFeatureSet());
