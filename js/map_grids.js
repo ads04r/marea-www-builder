@@ -24,6 +24,7 @@ function GridSquaresFeatureSet()
         zoomToBoundsOnClick: true
     });
     var me = this;
+    this.modifyMenu = function() { return(false); } // Ensures no menu entry
 	this.init = function()
 	{
         this.layer = L.geoJSON(get_grids_geojson(), {

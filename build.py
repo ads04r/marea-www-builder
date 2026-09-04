@@ -1,4 +1,5 @@
 import os, json, csv, requests, shutil, kml2geojson.main, argparse
+import re, xml.etree.ElementTree as ET
 
 def get_grid_geometries(grids_file):
 
@@ -8,6 +9,24 @@ def get_grid_geometries(grids_file):
         id = grid['properties']['name'].strip().upper()
         ret[id] = grid['geometry']
     return ret
+
+def get_all_marea_grids(marea_grids_file):
+
+    doc = ET.parse("data/marea_all_grids.kml")
+    root = doc.getroot()
+    grids = []
+
+    for placemark in root.findall('.//{http://www.opengis.net/kml/2.2}Placemark'):
+        descelem = placemark.find('./{http://www.opengis.net/kml/2.2}description')
+        if descelem is None:
+            continue
+        desc = descelem.text
+        match = re.search(r'[WE][0-9]{2}[NS][0-9]{2}-[0-9]{2}', desc)
+        if match is None:
+            continue
+        grids.append(str(match[0]))
+
+    return grids
 
 def get_site_geometries(geometries_file):
 
@@ -138,7 +157,9 @@ def compile_assets(config, js_path, css_path, dist_dir):
     with open(os.path.join(dist_dir, 'css.css'), 'w') as fp:
         fp.write(css)    
 
-def compile_grids_data(grids_file, geometries_file, summary_file, disturbances_file, dist_dir):
+def compile_grids_data(grids_file, marea_grids_file, geometries_file, summary_file, disturbances_file, dist_dir):
+
+    marea_grids = get_all_marea_grids(marea_grids_file)
     geom = get_grid_geometries(grids_file)
     with open(disturbances_file, 'r') as fp:
         disturbances_data = json.load(fp)
@@ -221,9 +242,26 @@ def compile_grids_data(grids_file, geometries_file, summary_file, disturbances_f
         if len(features) > 0:
             with open(os.path.join(dist_data, grid_id + '.json'), 'w') as fp:
                 fp.write(json.dumps({"type": "FeatureCollection", "features": features}))
-
-def compile_optional_grid_data(grids_file, all_grids_file, dist_dir):
-    return False
+    data = {}
+    for grid_id in marea_grids:
+        if grid_id not in geom:
+            continue
+        if grid_id in data:
+            continue
+        grid_file = os.path.join(dist_data, grid_id + '.json')
+        if os.path.exists(grid_file):
+            continue
+        grid_url = "https://marea-project.github.io/eamena-stats/{}.html".format(grid_id)
+        data[grid_id] = {
+            "type": "Feature",
+            "properties": {
+                "name": grid_id,
+                "url": grid_url,
+            },
+            "geometry": geom[grid_id]
+        }
+    with open(os.path.join(dist_data, 'unfinished_marea_grids.json'), 'w') as fp:
+        fp.write(json.dumps(list(data.values())))        
 
 def get_empty_records_layer(empty_records_file, geometries_file):
     geom = get_site_geometries(geometries_file)
@@ -251,7 +289,7 @@ def main(operation='all'):
     css_path = os.path.join(base_dir, 'css')
     static_path = os.path.join(base_dir, 'static')
     grids_file = os.path.join(data_dir, 'eamena_grids.kml')
-    all_grids_file = os.path.join(data_dir, 'marea_all_grids.kml')
+    marea_grids_file = os.path.join(data_dir, 'marea_all_grids.kml')
     geometries_file = os.path.join(data_dir, 'geometries.csv')
     disturbances_file = os.path.join(data_dir, 'disturbances.json')
     summary_file = os.path.join(data_dir, 'summary.json')
@@ -266,8 +304,7 @@ def main(operation='all'):
         compile_assets(config, js_path, css_path, dist_dir)
         copy_static_files(static_path, dist_dir)
     if operation in ['all']:
-        compile_grids_data(grids_file, geometries_file, summary_file, disturbances_file, dist_dir)
-        compile_optional_grid_data(grids_file, all_grids_file, dist_dir)
+        compile_grids_data(grids_file, marea_grids_file, geometries_file, summary_file, disturbances_file, dist_dir)
 
 if __name__ == "__main__":
 
